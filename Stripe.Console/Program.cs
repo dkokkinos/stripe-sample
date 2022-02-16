@@ -10,7 +10,7 @@ namespace Stripe.Console
     {
         static void Main(string[] args)
         {
-            PlanService service = new PlanService(new StripePaymentsGateway(new Loggg(), "sk_test_51I0qiyJOBJvOg1D5DvnQplgjoGL5eZNTfbDeMyBOhpYmLCjFwbYSBc0sbNJD1hp3S914o2Xt20sLhH2HdD7g63cX00K6o20nP5"));
+            PlanService service = new PlanService(new StripePaymentsGateway(new Loggg(), ""));
             service.Create().GetAwaiter().GetResult();
         }
 
