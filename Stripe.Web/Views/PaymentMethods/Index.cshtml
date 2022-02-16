@@ -1,0 +1,89 @@
+﻿@model Stripe.Web.Services.CustomerModel
+
+<h3>Edit payment methods (cards) for customer with email:@Model.Email</h3>
+
+<br /><br />
+<div class="col-md-5">
+    <h4>Existing Payment Methods</h4>
+    @if (Model.PaymentMethods == null || !Model.PaymentMethods.Any())
+    {
+        @:there are no payment methods
+    }
+    @foreach (var pm in Model.PaymentMethods)
+    {
+        @using (Html.BeginForm("Delete", "PaymentMethods", FormMethod.Post))
+        {
+            <div class="mb-3">
+                <div>***@pm.Card.Last4, @pm.Card.ExpMonth/@pm.Card.ExpYear</div>
+                <input type="hidden" name="customerEmail" class="form-control" value="@Model.Email">
+                <input type="hidden" name="paymentmethodid" class="form-control" value="@pm.Id">
+                <button type="submit" class="btn btn-primary">Delete</button>
+            </div>
+
+        }
+    }
+
+    <br /><br /><br />
+    <h4>Add new card</h4>
+    <input id="cardholder-name" placeholder="card holders name" type="text">
+    <!-- placeholder for Elements -->
+    <form id="payment-setup-form" data-secret='@ViewData["ClientSecret"]'>
+        <div id="card-element"></div>
+        <button id="card-button">
+            Save Card
+        </button>
+    </form>
+
+    <input type="hidden" id="stripePublicKey" value="@ViewData["StripePublicKey"]"/>
+
+</div>
+@section Scripts{
+    <script>
+        let $keyInput = $('#stripePublicKey');
+        var stripe = Stripe($keyInput.val());
+
+        var elements = stripe.elements();
+        var cardElement = elements.create('card', {
+            hidePostalCode: true,
+            style: {
+                base: {
+                    lineHeight: '38px',
+                    fontWeight: 300,
+                    fontSize: '15px',
+                },
+            }
+        });
+        cardElement.mount('#card-element');
+
+        var cardholderName = document.getElementById('cardholder-name');
+        var setupForm = document.getElementById('payment-setup-form');
+        var clientSecret = setupForm.dataset.secret;
+
+        setupForm.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+
+            confirmCardSetup();
+        });
+
+        function confirmCardSetup() {
+            stripe.confirmCardSetup(
+                clientSecret,
+                {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            name: cardholderName.value,
+                        },
+                    },
+                }
+            ).then(function (result) {
+                if (result.error) {
+                    // Display error.message in your UI.
+                } else {
+                    location.reload();
+                }
+            });
+        }
+
+    </script>
+}

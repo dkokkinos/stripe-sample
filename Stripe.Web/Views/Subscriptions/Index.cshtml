@@ -1,0 +1,13 @@
+﻿
+<h1>Create a subscription</h1>
+
+@using (Html.BeginForm("CreateIntent", "Subscriptions", FormMethod.Post, new { id = "create-subscription-form" }))
+{
+    <div class="mb-3">
+        <label for="inputEmail" class="form-label">Customer Email</label>
+        <input type="email" name="email" class="form-control" id="inputEmail">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+
+}

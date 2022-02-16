@@ -1,0 +1,39 @@
+﻿@model List<Stripe.Web.Services.CustomerModel> 
+
+<h3>Create a new customer</h3>
+@using (Html.BeginForm("Create", "Customers", FormMethod.Post, new { id = "create-customer-form" }))
+{
+    <div class="mb-3">
+        <label for="inputName" class="form-label">SystemId</label>
+        <input type="text" name="systemId" class="form-control" id="systemIdName">
+    </div>
+    <div class="mb-3">
+        <label for="inputName" class="form-label">Name</label>
+        <input type="text" name="name" class="form-control" id="inputName">
+    </div>
+    <div class="mb-3">
+        <label for="inputEmail" class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" id="inputEmail">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+
+}
+
+<h3>Delete a customer by Email</h3>
+@using (Html.BeginForm("Delete", "Customers", FormMethod.Post, new { id = "delete-customer-form" }))
+{
+    <div class="mb-3">
+        <label for="inputEmail" class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" id="inputEmail">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+}
+
+<h3>Top 10 Customers</h3>
+@foreach (var customer in Model)
+{
+    <div>@customer.SystemId, @customer.Email, @customer.Name</div>
+    <br />
+}

@@ -1,0 +1,38 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome To Stripe Demo</h1>
+    <br/>
+    <br />
+    <br />
+    <div class="col-md-7">
+        @using (Html.BeginForm("PopulatePlans", "Home", FormMethod.Post, new { id = "plans-form" }))
+        {
+            <button type="submit" class="btn btn-primary">Populate Plans</button>
+        }
+        <br /><br />
+        <h3>Edit payment methods for customer by Email</h3>
+        @using (Html.BeginForm("Index", "PaymentMethods", FormMethod.Post, new { id = "payment-methods-customer-form" }))
+        {
+            <div class="mb-3">
+                <label for="inputEmail" class="form-label">Email</label>
+                <input type="email" name="customerEmail" class="form-control" id="inputEmail">
+            </div>
+
+            <button type="submit" class="btn btn-primary">GO</button>
+        }
+        <br /><br />
+        <h3>Charge a Customer</h3>
+        @using (Html.BeginForm("Index", "Charge", FormMethod.Post, new { id = "charge-customer-form" }))
+        {
+            <div class="mb-3">
+                <label for="chargeEmail" class="form-label">Email</label>
+                <input type="email" name="customerEmail" class="form-control" id="chargeEmail">
+            </div>
+
+            <button type="submit" class="btn btn-primary">GO</button>
+        }
+    </div>
+</div>
