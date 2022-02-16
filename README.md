@@ -1,2 +1,2 @@
 # stripe-sample
-a sample application for stripe payments integration
+for full documentation of the stripe gateway see here - https://softwareparticles.com/stripe-payment-gateway-dotnet/
