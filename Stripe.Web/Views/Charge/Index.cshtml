@@ -1,4 +1,4 @@
-﻿@model Stripe.Web.Services.CustomerModel
+﻿@model Stripe.Web.Services.CustomerDto
 
 @if (Model == null)
 {
@@ -6,22 +6,28 @@
 }
 else
 {
-    <h3>Charge customer with email:@Model.Email</h3>
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <h3>Charge customer with email: @Model.Email</h3>
 
-    <br />
-    <h4>Payment Methods</h4>
-    @foreach (var pm in Model.PaymentMethods)
-    {
-        @using (Html.BeginForm("Create", "Charge", FormMethod.Post))
-        {
-            <div class="mb-3">
-                <div>***@pm.Card.Last4, @pm.Card.ExpMonth/@pm.Card.ExpYear</div>
-                <input type="hidden" name="customerEmail" class="form-control" value="@Model.Email">
-                <input type="hidden" name="paymentmethodid" class="form-control" value="@pm.Id">
-                <input type="number" name="amount" placeholder="amount e.g. 10.99" />
-                <button type="submit" class="btn btn-primary">Charge</button>
-            </div>
+            <br />
+            <h4>Payment Methods</h4>
+            <br>
+            @foreach (var pm in Model.PaymentMethods)
+            {
+                @using (Html.BeginForm("Create", "Charge", FormMethod.Post))
+                {
+                    <div class="mb-3">
+                        <div><strong>CardNumber</strong>: ***@pm.Card.Last4, <strong>Expiration</strong>: @pm.Card.ExpMonth/@pm.Card.ExpYear</div>
+                        <input type="hidden" name="customerEmail" class="form-control" value="@Model.Email">
+                        <input type="hidden" name="paymentmethodid" class="form-control" value="@pm.Id">
+                        <input type="number" name="amount" class="form-control" placeholder="amount e.g. 10.99" />
+                        <br>
+                        <button type="submit" class="btn btn-primary">Charge</button>
+                    </div>
 
-        }
-    }
+                }
+            }
+        </div>
+    </div>
 }

@@ -22,7 +22,7 @@ namespace Stripe.Web.Controllers
 
         public async Task<IActionResult> Index(string customerEmail)
         {
-            var customer = await _paymentsGateway.GetCustomerByEmail(customerEmail, PaymentModelInclude.PaymentMethods);
+            var customer = await _paymentsGateway.GetCustomerByEmail(customerEmail, PaymentIncludeDto.PaymentMethods);
             if (customer == null)
                 return View();
             ViewData["StripePublicKey"] = _configuration.GetSection("Stripe").GetValue<string>("publicKey");

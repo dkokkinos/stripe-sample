@@ -7,12 +7,13 @@ namespace Stripe.Web.Services
 {
     public interface IPaymentsGateway
     {
-        Task<List<PlanModel>> PopulatePlans(List<PlanModel> plans);
+        Task<List<PlanDto>> PopulatePlans(List<PlanDto> plans);
+        Task<List<PlanDto>> GetPlans();
 
         Task<bool> CreateCustomer(string name, string email, string systemId);
-        Task<List<CustomerModel>> GetCustomers(int take);
-        Task<CustomerModel> GetCustomerByEmail(string email, params PaymentModelInclude[] include);
-        Task<CustomerModel> DeleteCustomerByEmail(string email);
+        Task<List<CustomerDto>> GetCustomers(int take);
+        Task<CustomerDto> GetCustomerByEmail(string email, params PaymentIncludeDto[] include);
+        Task<CustomerDto> DeleteCustomerByEmail(string email);
 
         /// <summary>
         /// when you want to add a payment method for future payment for this particular customer.
@@ -20,8 +21,8 @@ namespace Stripe.Web.Services
         /// </summary>
         /// <param name="customer"></param>
         /// <returns></returns>
-        Task<FuturePaymentIntentModel> PrepareForFuturePayment(string customerId);
-        Task<FuturePaymentIntentModel> PrepareForFuturePaymentWithCustomerEmail(string customerEmail);
+        Task<FuturePaymentIntent> PrepareForFuturePayment(string customerId);
+        Task<FuturePaymentIntent> PrepareForFuturePaymentWithCustomerEmail(string customerEmail);
 
         Task<List<PaymentMethodModel>> GetPaymentMethods(string customerId, PaymentMethodType paymentMethodType);
         Task<List<PaymentMethodModel>> GetPaymentMethodsByCustomerEmail(string customerEmail, PaymentMethodType paymentMethodType);

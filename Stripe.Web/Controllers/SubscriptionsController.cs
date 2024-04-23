@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Stripe.Web.Models;
+using Stripe.Web.Models.Subscriptions;
 using Stripe.Web.Services;
 using System;
 using System.Collections.Generic;
@@ -28,9 +29,9 @@ namespace Stripe.Web.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateIntent(CustomerModel customer)
+        public async Task<IActionResult> CreateIntent(string email)
         {
-            customer = await this._paymentsGateway.GetCustomerByEmail(customer.Email);
+            var customer = await this._paymentsGateway.GetCustomerByEmail(email);
 
             var options = new SetupIntentCreateOptions
             {
@@ -40,12 +41,13 @@ namespace Stripe.Web.Controllers
             var intent = service.Create(options);
             ViewData["ClientSecret"] = intent.ClientSecret;
 
-            return View(customer);
+            var plans = await this._paymentsGateway.GetPlans();
+            var paymentMethods = await this._paymentsGateway.GetPaymentMethods(customer.Id, PaymentMethodType.Card);
+
+            return View(new CreateSubscriptionIntentModel(customer, plans, paymentMethods));
         }
 
-
-        [HttpPost("create-subscription")]
-        public async Task<ActionResult<Subscription>> Create([FromBody] CreateSubscriptionRequest req)
+        public async Task<ActionResult<Subscription>> Create(CreateSubscriptionRequest req)
         {
             // Attach payment method
             var options = new PaymentMethodAttachOptions
@@ -74,7 +76,7 @@ namespace Stripe.Web.Controllers
                 {
                     new SubscriptionItemOptions
                     {
-                        Price = "price_1I3QjyJOBJvOg1D5t6glxNWK",// req.PriceId,
+                        Price = req.PriceId,
                     },
                 },
             };
@@ -83,13 +85,14 @@ namespace Stripe.Web.Controllers
             try
             {
                 Subscription subscription = subscriptionService.Create(subscriptionOptions);
-                return subscription;
+                return View(subscription);
             }
             catch (StripeException e)
             {
                 Console.WriteLine($"Failed to create subscription.{e}");
                 return BadRequest();
             }
+
         }
     }
 }

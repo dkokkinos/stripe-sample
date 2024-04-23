@@ -17,7 +17,7 @@ namespace Stripe.Web.Controllers
             _paymentsGateway = paymentsGateway;
         }
 
-        public async Task<ActionResult<List<CustomerModel>>> Index()
+        public async Task<ActionResult<List<Services.CustomerDto>>> Index()
         {
             var customers = await this._paymentsGateway.GetCustomers(take: 10);
             return View(customers);

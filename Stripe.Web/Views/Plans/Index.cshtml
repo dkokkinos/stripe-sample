@@ -1,0 +1,37 @@
+﻿@model List<Stripe.Web.Services.PlanDto>
+
+@{
+    ViewData["Title"] = "Plans";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Plans</h1>
+
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-body">
+        @if (Model.Any())
+        {
+            <H3>Available Plans</H3>
+            @foreach (var plan in Model)
+            {
+                <ul>
+                    PlanName: @plan.Name
+                    @foreach (var price in plan.Prices)
+                    {
+                        <li><strong>Id</strong>: @price.Id, <strong>UnitAmount</strong>: @price.UnitAmount, <strong>Interval</strong>: @price.Interval, <strong>Currency</strong>: @price.Currency</li>
+                    }
+                </ul>
+            }
+        }
+        else
+        {
+            <H3>There are no available Plans</H3>
+            @using (Html.BeginForm("PopulatePlans", "Plans", FormMethod.Post, new { id = "plans-form" }))
+            {
+                <button type="submit" class="btn btn-primary">Populate Sample Plans</button>
+            }
+        }
+    </div>
+</div>

@@ -1,24 +1,52 @@
-﻿@model Stripe.Web.Services.CustomerModel
-
-<h2>Create subscription for @Model.Name, @Model.Email.</h2>
-
-<form id="payment-form" customer-id="@Model.Id">
-
-    <input id="name" placeholder="name" />
-    <input id="priceId" placeholder="plan id" />
-
-    <div id="card-element">
-        <!-- Elements will create input elements here -->
+﻿@model Stripe.Web.Models.Subscriptions.CreateSubscriptionIntentModel
+<div class="panel panel-default">
+    <div class="panel-body">
+        <h2>Create subscription for @Model.Customer.Name, @Model.Customer.Email.</h2>
+        <br />
+        <br />
+        <H3>Available Plans</H3>
+        @foreach (var plan in Model.Plans)
+        {
+            <ul>PlanName: @plan.Name
+            @foreach (var price in plan.Prices)
+            {
+                <li>Id:@price.Id, UnitAmount:@price.UnitAmount, Interval:@price.Interval, Currency:@price.Currency</li>
+            }
+            </ul>
+        }
+        <br />
+        <H3>Payment Methods</H3>
+        @foreach (var paymentMethod in Model.PaymentMethods)
+        {
+            <p>Id: @paymentMethod.Id, Type : @paymentMethod.Type</p>
+        
+        }
     </div>
+</div>
+<br />
+<br />
+<div class="panel panel-default">
+    <div class="panel-body">
+        @using (Html.BeginForm("Create", "Subscriptions", FormMethod.Post, new { id = "create-subscription22" }))
+        {
+            <input type="hidden" name="customerId" value="@Model.Customer.Id" id="customerId">
+            <div class="mb-3">
+                <label for="inputPriceId" class="form-label">Price Id</label>
+                <input type="text" name="priceId" class="form-control" id="inputPriceId">
+            </div>
+            <div class="mb-3">
+                <label for="inputPaymentMethodId" class="form-label">Payment Method</label>
+                <input type="text" name="paymentMethodId" class="form-control" id="inputPaymentMethodId">
+            </div>
 
-    <!-- We'll put the error messages in this element -->
-    <div id="card-element-errors" role="alert"></div>
-    <button type="submit">Subscribe</button>
-</form>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        }
+    </div>
+</div>
 
 
 <input type="hidden" id="stripePublicKey" value="@ViewData["StripePublicKey"]" />
-
+@*
 <script type="text/javascript">
     let $keyInput = $('#stripePublicKey');
     var stripe = Stripe($keyInput.val());
@@ -220,3 +248,4 @@
 
 
 </script>
+*@

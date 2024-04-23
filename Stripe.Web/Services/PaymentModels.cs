@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 
 namespace Stripe.Web.Services
 {
-    public class FuturePaymentIntentModel
+    public class FuturePaymentIntent
     {
         public string Id { get; set; }
         public string IntentSecret { get; set; }
-        public CustomerModel Customer { get; set; }
+        public CustomerDto Customer { get; set; }
     }
 
-    public class CustomerModel
+    public class CustomerDto
     {
         public string Id { get; set; }
         public string SystemId { get; set; }
@@ -21,18 +21,18 @@ namespace Stripe.Web.Services
 
         public List<PaymentMethodModel> PaymentMethods { get; set; }
 
-        public CustomerModel(string id)
+        public CustomerDto(string id)
         {
             Id = id;
         }
     }
 
-    public enum PaymentModelInclude
+    public enum PaymentIncludeDto
     {
         PaymentMethods
     }
 
-    public class PlanModel
+    public class PlanDto
     {
         public string Id { get; set; }
         public string Name { get; set; }
@@ -42,7 +42,7 @@ namespace Stripe.Web.Services
     public class PlanPriceModel
     {
         public string Id { get; set; }
-        public long UnitAmount { get; set; }
+        public decimal UnitAmount { get; set; }
         public PriceInterval Interval { get; set; }
         public Currency Currency { get; set; }
     }
@@ -87,8 +87,10 @@ namespace Stripe.Web.Services
 
     public enum PriceInterval
     {
-        Monthly,
-        Yearly
+        Day,
+        Week,
+        Month,
+        Year
     }
 
     public enum Currency

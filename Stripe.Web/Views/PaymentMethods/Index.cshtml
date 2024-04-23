@@ -1,40 +1,58 @@
-﻿@model Stripe.Web.Services.CustomerModel
+﻿@model Stripe.Web.Services.CustomerDto
 
 <h3>Edit payment methods (cards) for customer with email:@Model.Email</h3>
 
 <br /><br />
 <div class="col-md-5">
-    <h4>Existing Payment Methods</h4>
-    @if (Model.PaymentMethods == null || !Model.PaymentMethods.Any())
-    {
-        @:there are no payment methods
-    }
-    @foreach (var pm in Model.PaymentMethods)
-    {
-        @using (Html.BeginForm("Delete", "PaymentMethods", FormMethod.Post))
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+        <h4>Existing Payment Methods</h4>
+        @if (Model.PaymentMethods == null || !Model.PaymentMethods.Any())
         {
-            <div class="mb-3">
-                <div>***@pm.Card.Last4, @pm.Card.ExpMonth/@pm.Card.ExpYear</div>
-                <input type="hidden" name="customerEmail" class="form-control" value="@Model.Email">
-                <input type="hidden" name="paymentmethodid" class="form-control" value="@pm.Id">
-                <button type="submit" class="btn btn-primary">Delete</button>
-            </div>
-
+            @:there are no payment methods
         }
-    }
+        @foreach (var pm in Model.PaymentMethods)
+        {
+            @using (Html.BeginForm("Delete", "PaymentMethods", FormMethod.Post))
+            {
+                <div class="mb-3">
+                    <div><strong>CardNumber</strong>: ***@pm.Card.Last4, <strong>Expiration</strong>: @pm.Card.ExpMonth/@pm.Card.ExpYear
+                        <input type="hidden" name="customerEmail" class="form-control" value="@Model.Email">
+                        <input type="hidden" name="paymentmethodid" class="form-control" value="@pm.Id">
+                        <button type="submit" class="btn btn-primary">Delete</button>
+                    </div>
+                </div>
 
-    <br /><br /><br />
-    <h4>Add new card</h4>
-    <input id="cardholder-name" placeholder="card holders name" type="text">
-    <!-- placeholder for Elements -->
-    <form id="payment-setup-form" data-secret='@ViewData["ClientSecret"]'>
-        <div id="card-element"></div>
-        <button id="card-button">
-            Save Card
-        </button>
-    </form>
+            }
+        }
+        </div>
+    </div>
+    <br />
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <h4>Add new card</h4>
+            <input id="cardholder-name" placeholder="card holders name" class="form-control" type="text">
+            <!-- placeholder for Elements -->
+            <form id="payment-setup-form" data-secret='@ViewData["ClientSecret"]'>
+                <div id="card-element"></div>
+                <button id="card-button">
+                    Save Card
+                </button>
+            </form>
 
-    <input type="hidden" id="stripePublicKey" value="@ViewData["StripePublicKey"]"/>
+            <input type="hidden" id="stripePublicKey" value="@ViewData["StripePublicKey"]"/>
+
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <p>Test card number <strong>4242 4242 4242 4242</strong>.</p>
+            <p>Use a valid future date, such as 12/34.</p>
+            <p>Use any three-digit CVC (four digits for American Express cards).</p>
+        </div>
+    </div>
 
 </div>
 @section Scripts{

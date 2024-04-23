@@ -18,7 +18,7 @@ namespace Stripe.Web.Services
             StripeConfiguration.ApiKey = apiKey;
         }
 
-        public async Task<List<CustomerModel>> GetCustomers(int take)
+        public async Task<List<CustomerDto>> GetCustomers(int take)
         {
             var service = new CustomerService();
             var stripeCustomers = await service.ListAsync(new CustomerListOptions()
@@ -26,7 +26,7 @@ namespace Stripe.Web.Services
                 Limit = take > 100 ? 100 : take,
             });
 
-            return stripeCustomers.Select(x => new CustomerModel(x.Id)
+            return stripeCustomers.Select(x => new CustomerDto(x.Id)
             {
                 Email = x.Email,
                 Name = x.Name,
@@ -34,7 +34,7 @@ namespace Stripe.Web.Services
             }).ToList();
         }
 
-        public async Task<CustomerModel> GetCustomerByEmail(string email, params PaymentModelInclude[] includes)
+        public async Task<CustomerDto> GetCustomerByEmail(string email, params PaymentIncludeDto[] includes)
         {
             var service = new CustomerService();
             var stripeCustomers = await service.ListAsync(new CustomerListOptions()
@@ -47,12 +47,12 @@ namespace Stripe.Web.Services
 
             var stripeCustomer = stripeCustomers.Single();
 
-            var customerModel = new CustomerModel(stripeCustomer.Id)
+            var customerModel = new CustomerDto(stripeCustomer.Id)
             {
                 Email = email,
                 Name = stripeCustomer.Name
             };
-            if (includes.Any() && includes.Contains(PaymentModelInclude.PaymentMethods))
+            if (includes.Any() && includes.Contains(PaymentIncludeDto.PaymentMethods))
             {
                 var paymentMethods = await this.GetPaymentMethods(stripeCustomer.Id, PaymentMethodType.Card);
                 customerModel.PaymentMethods = paymentMethods;
@@ -76,7 +76,7 @@ namespace Stripe.Web.Services
                     }
                 };
                 var service = new CustomerService();
-                Customer c = await service.CreateAsync(options);
+                var cucstomer = await service.CreateAsync(options);
                 this._logger.LogInformation("Customer Created succesfully");
                 return true;
             }
@@ -87,7 +87,7 @@ namespace Stripe.Web.Services
             }
         }
 
-        public async Task<CustomerModel> DeleteCustomerByEmail(string email)
+        public async Task<CustomerDto> DeleteCustomerByEmail(string email)
         {
             var service = new CustomerService();
             var stripeCustomers = await service.ListAsync(new CustomerListOptions()
@@ -99,7 +99,7 @@ namespace Stripe.Web.Services
             if (stripeCustomer == null) return null;
 
             var deletedStripeCustomer = await service.DeleteAsync(stripeCustomer.Id);
-            return new CustomerModel(deletedStripeCustomer.Id)
+            return new CustomerDto(deletedStripeCustomer.Id)
             {
                 Name = deletedStripeCustomer.Name,
                 Email = deletedStripeCustomer.Email,
@@ -107,7 +107,7 @@ namespace Stripe.Web.Services
             };
         }
 
-        public async Task<List<PlanModel>> PopulatePlans(List<PlanModel> plans)
+        public async Task<List<PlanDto>> PopulatePlans(List<PlanDto> plans)
         {
             var productService = new ProductService();
             var existingProducts = await productService.ListAsync(new ProductListOptions()
@@ -121,7 +121,7 @@ namespace Stripe.Web.Services
                 Active = true
             });
 
-            List<PlanModel> result = new List<PlanModel>();
+            List<PlanDto> result = new List<PlanDto>();
 
             foreach (var plan in plans)
             {
@@ -146,7 +146,7 @@ namespace Stripe.Web.Services
                     prices = await CreatePrices(plan.Prices, existingProduct);
                 }
 
-                result.Add(new PlanModel()
+                result.Add(new PlanDto()
                 {
                     Id = existingProduct.Id,
                     Name = existingProduct.Name,
@@ -154,12 +154,38 @@ namespace Stripe.Web.Services
                     {
                         Id = p.Id,
                         Currency = p.Currency == "usd" ? Currency.USD : Currency.Eur,
-                        Interval = p.Recurring?.Interval == "month" ? PriceInterval.Monthly : PriceInterval.Yearly,
-                        UnitAmount = p.UnitAmount.GetValueOrDefault()
+                        Interval = p.Recurring?.Interval == "month" ? PriceInterval.Day : PriceInterval.Year,
+                        UnitAmount = p.UnitAmountDecimal.GetValueOrDefault()
                     }).ToList()
                 });
             }
             return result;
+        }
+
+        public async Task<List<PlanDto>> GetPlans()
+        {
+            var options = new PlanListOptions()
+            {
+                Active = true
+            };
+            options.Expand = new List<string>() { "data.product" };
+            var service = new PlanService();
+            
+            StripeList<Plan> plans = await service.ListAsync(options);
+
+            var plansByProduct = plans.Where(x=>x.Product.Active).GroupBy(x => x.Product.Name);
+
+            return plansByProduct.Select(x => new PlanDto()
+            {
+                Name = x.Key,
+                Prices = x.Select(y => new PlanPriceModel()
+                {
+                    Id = y.Id,
+                    Currency = Enum.Parse<Currency>(y.Currency, true),
+                    Interval = Enum.Parse<PriceInterval>(y.Interval, true),
+                    UnitAmount = y.AmountDecimal.Value
+                }).ToList()
+            }).ToList();
         }
 
         private async Task<IEnumerable<Price>> CreatePrices(List<PlanPriceModel> prices, Product existingProduct,
@@ -179,11 +205,11 @@ namespace Stripe.Web.Services
                 var options = new PriceCreateOptions
                 {
                     Product = existingProduct.Id,
-                    UnitAmount = price.UnitAmount,
+                    UnitAmountDecimal = price.UnitAmount,
                     Currency = price.Currency.ToString().ToLower(),
                     Recurring = new PriceRecurringOptions
                     {
-                        Interval = price.Interval == PriceInterval.Monthly ? "month" : "year"
+                        Interval = price.Interval == PriceInterval.Day ? "month" : "year"
                     },
                 };
                 var createdPrice = await priceService.CreateAsync(options);
@@ -294,17 +320,17 @@ namespace Stripe.Web.Services
             }
         }
 
-        public async Task<FuturePaymentIntentModel> PrepareForFuturePaymentWithCustomerEmail(string customerEmail)
+        public async Task<FuturePaymentIntent> PrepareForFuturePaymentWithCustomerEmail(string customerEmail)
         {
             var stripeCustomer = await this.GetCustomerByEmail(customerEmail);
             if (stripeCustomer == null)
                 return null;
 
-            FuturePaymentIntentModel intent = await PrepareForFuturePayment(stripeCustomer.Id);
+            FuturePaymentIntent intent = await PrepareForFuturePayment(stripeCustomer.Id);
             return intent;
         }
 
-        public async Task<FuturePaymentIntentModel> PrepareForFuturePayment(string customerId)
+        public async Task<FuturePaymentIntent> PrepareForFuturePayment(string customerId)
         {
             var options = new SetupIntentCreateOptions
             {
@@ -317,11 +343,11 @@ namespace Stripe.Web.Services
 
             var service = new SetupIntentService();
             var intent = await service.CreateAsync(options);
-            return new FuturePaymentIntentModel()
+            return new FuturePaymentIntent()
             {
                 Id = intent.Id,
                 IntentSecret = intent.ClientSecret,
-                Customer = new CustomerModel(intent.Customer.Id)
+                Customer = new CustomerDto(intent.Customer.Id)
                 {
                     Email = intent.Customer.Email,
                     Name = intent.Customer.Name,
@@ -381,7 +407,7 @@ namespace Stripe.Web.Services
 
         public async Task<List<PaymentMethodModel>> GetPaymentMethodsByCustomerEmail(string customerEmail, PaymentMethodType paymentMethodType)
         {
-            CustomerModel customer = await this.GetCustomerByEmail(customerEmail);
+            CustomerDto customer = await this.GetCustomerByEmail(customerEmail);
 
             return await this.GetPaymentMethods(customer.Id, paymentMethodType);
         }
@@ -438,14 +464,17 @@ namespace Stripe.Web.Services
 
         public async Task<IEnumerable<ChargeModel>> GetPaymentStatus(string paymentId)
         {
+            
             var service = new PaymentIntentService();
             var intent = await service.GetAsync(paymentId);
-            var charges = intent.Charges.Data;
+            return null;
+            //var charges = intent.bill Charges.Data;
 
-            return charges.Select(x => new ChargeModel(x.Id)
-            {
-                Status = x.Status
-            });
+            //return charges.Select(x => new ChargeModel(x.Id)
+            //{
+            //    Status = x.Status
+            //});
         }
+
     }
 }

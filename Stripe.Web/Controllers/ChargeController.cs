@@ -20,7 +20,7 @@ namespace Stripe.Web.Controllers
         {
             if (string.IsNullOrEmpty(customerEmail))
                 return View();
-            var customer = await _paymentsGateway.GetCustomerByEmail(customerEmail, PaymentModelInclude.PaymentMethods);
+            var customer = await _paymentsGateway.GetCustomerByEmail(customerEmail, PaymentIncludeDto.PaymentMethods);
             return View(customer);
         }
 

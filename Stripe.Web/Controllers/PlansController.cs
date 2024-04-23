@@ -1,52 +1,36 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Stripe.Web.Models;
 using Stripe.Web.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
-namespace Stripe.Console
+namespace Stripe.Web.Controllers
 {
-    public class Program
+    public class PlansController : Controller
     {
-        static void Main(string[] args)
-        {
-            PlanService service = new PlanService(new StripePaymentsGateway(new Loggg(), ""));
-            service.Create().GetAwaiter().GetResult();
-        }
-
-        private class Loggg : ILogger<StripePaymentsGateway>
-        {
-            public IDisposable BeginScope<TState>(TState state)
-            {
-                return null;
-            }
-
-            public bool IsEnabled(LogLevel logLevel)
-            {
-                return false;
-            }
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-            {
-                
-            }
-        }
-    }
-
-    public class PlanService
-    {
+        private readonly ILogger<HomeController> _logger;
         private readonly IPaymentsGateway _paymentsGateway;
 
-        public PlanService(IPaymentsGateway paymentsGateway)
+        public PlansController(IPaymentsGateway paymentsGateway,
+            ILogger<HomeController> logger)
         {
             _paymentsGateway = paymentsGateway;
+            _logger = logger;
         }
 
-        public async Task Create()
+        public async Task<IActionResult> Index()
         {
-            var res = await this._paymentsGateway.PopulatePlans(new List<Web.Services.PlanDto>() {
+            var plans = await _paymentsGateway.GetPlans();
+            return View(plans);
+        }
+
+        public async Task<ActionResult> PopulatePlans()
+        {
+            var createdPlans = await this._paymentsGateway.PopulatePlans(new List<Web.Services.PlanDto>() {
                 new Web.Services.PlanDto()
                 {
                     Name = "basic",
@@ -110,6 +94,8 @@ namespace Stripe.Console
                     Prices = new List<PlanPriceModel>()
                 }
             });
+            return View("Index", createdPlans);
         }
+
     }
 }
