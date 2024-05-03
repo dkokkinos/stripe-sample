@@ -82,7 +82,8 @@ namespace Stripe.Web.Services
             };
         }
 
-        public async Task<CustomerDto> GetCustomerByEmail(string email, params PaymentIncludeDto[] includes)
+        public async Task<CustomerDto> GetCustomerByEmail(string email,
+            params PaymentIncludeDto[] includes)
         {
             var service = new CustomerService();
             var stripeCustomers = await service.ListAsync(new CustomerListOptions()
@@ -103,7 +104,8 @@ namespace Stripe.Web.Services
 
             if (includes.Any() && includes.Contains(PaymentIncludeDto.PaymentMethods))
             {
-                var paymentMethods = await this.GetPaymentMethods(stripeCustomer.Id, PaymentMethodType.Card);
+                var paymentMethods = await this.GetPaymentMethods(stripeCustomer.Id,
+                    PaymentMethodType.Card);
                 customerModel.PaymentMethods = paymentMethods;
             }
 
