@@ -18,6 +18,8 @@ namespace Stripe.Web.Services
             StripeConfiguration.ApiKey = apiKey;
         }
 
+        #region Customers
+
         public async Task<List<CustomerDto>> GetCustomers(int take)
         {
             var service = new CustomerService();
@@ -32,33 +34,6 @@ namespace Stripe.Web.Services
                 Name = x.Name,
                 SystemId = x.Metadata["ID"]
             }).ToList();
-        }
-
-        public async Task<CustomerDto> GetCustomerByEmail(string email, params PaymentIncludeDto[] includes)
-        {
-            var service = new CustomerService();
-            var stripeCustomers = await service.ListAsync(new CustomerListOptions()
-            {
-                Email = email
-            });
-
-            if (!stripeCustomers.Any())
-                return null;
-
-            var stripeCustomer = stripeCustomers.Single();
-
-            var customerModel = new CustomerDto(stripeCustomer.Id)
-            {
-                Email = email,
-                Name = stripeCustomer.Name
-            };
-            if (includes.Any() && includes.Contains(PaymentIncludeDto.PaymentMethods))
-            {
-                var paymentMethods = await this.GetPaymentMethods(stripeCustomer.Id, PaymentMethodType.Card);
-                customerModel.PaymentMethods = paymentMethods;
-            }
-
-            return customerModel;
         }
 
         public async Task<bool> CreateCustomer(string name, string email, string systemId)
@@ -106,6 +81,38 @@ namespace Stripe.Web.Services
                 SystemId = deletedStripeCustomer.Metadata?.GetValueOrDefault("ID")
             };
         }
+
+        public async Task<CustomerDto> GetCustomerByEmail(string email, params PaymentIncludeDto[] includes)
+        {
+            var service = new CustomerService();
+            var stripeCustomers = await service.ListAsync(new CustomerListOptions()
+            {
+                Email = email
+            });
+
+            if (!stripeCustomers.Any())
+                return null;
+
+            var stripeCustomer = stripeCustomers.Single();
+
+            var customerModel = new CustomerDto(stripeCustomer.Id)
+            {
+                Email = email,
+                Name = stripeCustomer.Name
+            };
+
+            if (includes.Any() && includes.Contains(PaymentIncludeDto.PaymentMethods))
+            {
+                var paymentMethods = await this.GetPaymentMethods(stripeCustomer.Id, PaymentMethodType.Card);
+                customerModel.PaymentMethods = paymentMethods;
+            }
+
+            return customerModel;
+        }
+
+        #endregion Customers
+
+        #region Plans
 
         public async Task<List<PlanDto>> PopulatePlans(List<PlanDto> plans)
         {
@@ -219,6 +226,65 @@ namespace Stripe.Web.Services
         }
 
 
+        #endregion Plans
+
+        #region Payment Methods
+
+        public async Task<List<PaymentMethodModel>> GetPaymentMethods(string customerId, PaymentMethodType paymentMethodType)
+        {
+            var options = new PaymentMethodListOptions
+            {
+                Customer = customerId,
+                Type = paymentMethodType.ToString().ToLower()
+            };
+
+            var service = new PaymentMethodService();
+            var paymentMethods = await service.ListAsync(options);
+
+
+            List<PaymentMethodModel> result = new List<PaymentMethodModel>();
+            foreach (var stripePaymentMethod in paymentMethods)
+            {
+                if (!Enum.TryParse(stripePaymentMethod.Type, true, out PaymentMethodType currPaymentMethodType))
+                {
+                    this._logger.LogError($"Cannot recognize PAYMENT_METHOD_TYPE:{stripePaymentMethod.Type}");
+                    continue;
+                }
+
+                PaymentMethodModel currentPaymentMethod = new PaymentMethodModel(stripePaymentMethod.Id)
+                {
+                    Type = currPaymentMethodType
+                };
+
+                if (currPaymentMethodType == PaymentMethodType.Card)
+                {
+                    currentPaymentMethod.Card = new PaymentMethodCardModel()
+                    {
+                        Brand = stripePaymentMethod.Card.Brand,
+                        Country = stripePaymentMethod.Card.Country,
+                        ExpMonth = stripePaymentMethod.Card.ExpMonth,
+                        ExpYear = stripePaymentMethod.Card.ExpYear,
+                        Issuer = stripePaymentMethod.Card.Issuer,
+                        Last4 = stripePaymentMethod.Card.Last4,
+                        Description = stripePaymentMethod.Card.Description,
+                        Fingerprint = stripePaymentMethod.Card.Fingerprint,
+                        Funding = stripePaymentMethod.Card.Funding,
+                        Iin = stripePaymentMethod.Card.Iin
+                    };
+                }
+
+                result.Add(currentPaymentMethod);
+            }
+            return result;
+        }
+
+        public async Task<List<PaymentMethodModel>> GetPaymentMethodsByCustomerEmail(string customerEmail, PaymentMethodType paymentMethodType)
+        {
+            CustomerDto customer = await this.GetCustomerByEmail(customerEmail);
+
+            return await this.GetPaymentMethods(customer.Id, paymentMethodType);
+        }
+
         public async Task<PaymentMethodModel> AttachPaymentMethod(string paymentMethodId, string customerId, bool makeDefault = true)
         {
             try
@@ -289,37 +355,6 @@ namespace Stripe.Web.Services
 
         }
 
-        public async Task<bool> CreateSubscription(string customerEmail, string priceId)
-        {
-            var stripeCustomer = await this.GetCustomerByEmail(customerEmail);
-            if (stripeCustomer == null)
-                return false;
-
-            var subscriptionOptions = new SubscriptionCreateOptions
-            {
-                Customer = stripeCustomer.Id,
-                Items = new List<SubscriptionItemOptions>
-                {
-                    new SubscriptionItemOptions
-                    {
-                        Price = priceId,
-                    },
-                },
-            };
-            subscriptionOptions.AddExpand("latest_invoice.payment_intent");
-            var subscriptionService = new SubscriptionService();
-            try
-            {
-                Subscription subscription = await subscriptionService.CreateAsync(subscriptionOptions);
-                return true;
-            }
-            catch (StripeException e)
-            {
-                this._logger.LogError($"An error occured during creation of subscription for CUSTOMER:{stripeCustomer.Id} and PRICE:{priceId}, {e}");
-                return false;
-            }
-        }
-
         public async Task<FuturePaymentIntent> PrepareForFuturePaymentWithCustomerEmail(string customerEmail)
         {
             var stripeCustomer = await this.GetCustomerByEmail(customerEmail);
@@ -356,62 +391,44 @@ namespace Stripe.Web.Services
             };
         }
 
+        #endregion Payment Methods
 
-        public async Task<List<PaymentMethodModel>> GetPaymentMethods(string customerId, PaymentMethodType paymentMethodType)
+        #region Subscriptions
+
+        public async Task<bool> CreateSubscription(string customerEmail, string priceId)
         {
-            var options = new PaymentMethodListOptions
+            var stripeCustomer = await this.GetCustomerByEmail(customerEmail);
+            if (stripeCustomer == null)
+                return false;
+
+            var subscriptionOptions = new SubscriptionCreateOptions
             {
-                Customer = customerId,
-                Type = paymentMethodType.ToString().ToLower()
-            };
-
-            var service = new PaymentMethodService();
-            var paymentMethods = await service.ListAsync(options);
-
-
-            List<PaymentMethodModel> result = new List<PaymentMethodModel>();
-            foreach (var stripePaymentMethod in paymentMethods)
-            {
-                if (!Enum.TryParse(stripePaymentMethod.Type, true, out PaymentMethodType currPaymentMethodType))
+                Customer = stripeCustomer.Id,
+                Items = new List<SubscriptionItemOptions>
                 {
-                    this._logger.LogError($"Cannot recognize PAYMENT_METHOD_TYPE:{stripePaymentMethod.Type}");
-                    continue;
-                }
-
-                PaymentMethodModel currentPaymentMethod = new PaymentMethodModel(stripePaymentMethod.Id)
-                {
-                    Type = currPaymentMethodType
-                };
-
-                if (currPaymentMethodType == PaymentMethodType.Card)
-                {
-                    currentPaymentMethod.Card = new PaymentMethodCardModel()
+                    new SubscriptionItemOptions
                     {
-                        Brand = stripePaymentMethod.Card.Brand,
-                        Country = stripePaymentMethod.Card.Country,
-                        ExpMonth = stripePaymentMethod.Card.ExpMonth,
-                        ExpYear = stripePaymentMethod.Card.ExpYear,
-                        Issuer = stripePaymentMethod.Card.Issuer,
-                        Last4 = stripePaymentMethod.Card.Last4,
-                        Description = stripePaymentMethod.Card.Description,
-                        Fingerprint = stripePaymentMethod.Card.Fingerprint,
-                        Funding = stripePaymentMethod.Card.Funding,
-                        Iin = stripePaymentMethod.Card.Iin
-                    };
-                }
-
-                result.Add(currentPaymentMethod);
+                        Price = priceId,
+                    },
+                },
+            };
+            subscriptionOptions.AddExpand("latest_invoice.payment_intent");
+            var subscriptionService = new SubscriptionService();
+            try
+            {
+                Subscription subscription = await subscriptionService.CreateAsync(subscriptionOptions);
+                return true;
             }
-            return result;
+            catch (StripeException e)
+            {
+                this._logger.LogError($"An error occured during creation of subscription for CUSTOMER:{stripeCustomer.Id} and PRICE:{priceId}, {e}");
+                return false;
+            }
         }
 
-        public async Task<List<PaymentMethodModel>> GetPaymentMethodsByCustomerEmail(string customerEmail, PaymentMethodType paymentMethodType)
-        {
-            CustomerDto customer = await this.GetCustomerByEmail(customerEmail);
+        #endregion Subscriptions
 
-            return await this.GetPaymentMethods(customer.Id, paymentMethodType);
-        }
-
+        #region Charges
 
         public async Task ChargeWithCustomerEmail(string customerEmail, string paymentMethodId, Currency currency, long unitAmount,
             bool sendEmailAfterSuccess = false, string emailDescription = "")
@@ -476,5 +493,6 @@ namespace Stripe.Web.Services
             //});
         }
 
+        #endregion Charges
     }
 }

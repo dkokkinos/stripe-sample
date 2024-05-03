@@ -11,7 +11,11 @@
         <div class="panel-body">
             <h3>Go to Plans</h3>
             <a href="/Plans/" class="btn btn-primary">See or Create Plans</a>
-            <br /><br />
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-body">
+            
             <h3>Edit payment methods for customer by Email</h3>
             @using (Html.BeginForm("Index", "PaymentMethods", FormMethod.Post, new { id = "payment-methods-customer-form" }))
             {
@@ -23,7 +27,7 @@
                 <button type="submit" class="btn btn-primary">Edit</button>
             }
         </div>
-        </div>
+    </div>
 
     <div class="panel panel-default">
         <div class="panel-body">
