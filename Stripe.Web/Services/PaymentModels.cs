@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Stripe.Web.Services
 {
-    public class FuturePaymentIntent
+    public class PaymentMethodIntentModel
     {
         public string Id { get; set; }
         public string IntentSecret { get; set; }

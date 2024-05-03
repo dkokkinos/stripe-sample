@@ -241,7 +241,6 @@ namespace Stripe.Web.Services
             var service = new PaymentMethodService();
             var paymentMethods = await service.ListAsync(options);
 
-
             List<PaymentMethodModel> result = new List<PaymentMethodModel>();
             foreach (var stripePaymentMethod in paymentMethods)
             {
@@ -352,20 +351,19 @@ namespace Stripe.Web.Services
         {
             var service = new PaymentMethodService();
             var paymentMethod = await service.DetachAsync(paymentMethodId);
-
         }
 
-        public async Task<FuturePaymentIntent> PrepareForFuturePaymentWithCustomerEmail(string customerEmail)
+        public async Task<PaymentMethodIntentModel> PrepareForFuturePaymentWithCustomerEmail(string customerEmail)
         {
             var stripeCustomer = await this.GetCustomerByEmail(customerEmail);
             if (stripeCustomer == null)
                 return null;
 
-            FuturePaymentIntent intent = await PrepareForFuturePayment(stripeCustomer.Id);
+            PaymentMethodIntentModel intent = await PrepareForFuturePayment(stripeCustomer.Id);
             return intent;
         }
 
-        public async Task<FuturePaymentIntent> PrepareForFuturePayment(string customerId)
+        public async Task<PaymentMethodIntentModel> PrepareForFuturePayment(string customerId)
         {
             var options = new SetupIntentCreateOptions
             {
@@ -378,7 +376,7 @@ namespace Stripe.Web.Services
 
             var service = new SetupIntentService();
             var intent = await service.CreateAsync(options);
-            return new FuturePaymentIntent()
+            return new PaymentMethodIntentModel()
             {
                 Id = intent.Id,
                 IntentSecret = intent.ClientSecret,

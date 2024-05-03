@@ -27,14 +27,12 @@ namespace Stripe.Web.Services
         #region Payment Methods
 
         /// <summary>
-        /// When you want to add a payment method for future payment for this particular customer.
-        /// Use the return object depending on the payment provider, 
-        /// e.g. for stripe use the IntentSecret as the ClientSecret
+        /// When you want to add a payment method for future payments for a particular customer.
         /// </summary>
-        /// <param name="customer"></param>
-        /// <returns></returns>
-        Task<FuturePaymentIntent> PrepareForFuturePayment(string customerId);
-        Task<FuturePaymentIntent> PrepareForFuturePaymentWithCustomerEmail(string customerEmail);
+        /// <param name="customer">The customer that the payment method will be created.</param>
+        /// <returns>An object that contains the IntentSecret key.</returns>
+        Task<PaymentMethodIntentModel> PrepareForFuturePayment(string customerId);
+        Task<PaymentMethodIntentModel> PrepareForFuturePaymentWithCustomerEmail(string customerEmail);
 
         Task<List<PaymentMethodModel>> GetPaymentMethods(string customerId,
             PaymentMethodType paymentMethodType);
